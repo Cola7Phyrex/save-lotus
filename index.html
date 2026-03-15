@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a1628">
+    <title>莲花碎片记录器</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-dark: #0a1628;
+            --bg-card: rgba(20, 35, 60, 0.8);
+            --accent-blue: #00d4ff;
+            --accent-cyan: #00f5ff;
+            --accent-purple: #8b5cf6;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(180deg, #0a1628 0%, #1a2d4a 50%, #0d1a2d 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .app-container {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            padding: 20px;
+        }
+
+        /* 顶部导航 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 20px;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .icon-btn:hover, .icon-btn:active {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--accent-blue);
+        }
+
+        .icon-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-secondary);
+        }
+
+        /* Tab 导航 */
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding: 5px 0;
+            scrollbar-width: none;
+        }
+
+        .tab-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.25), rgba(139, 92, 246, 0.2));
+            color: var(--accent-cyan);
+            border-color: rgba(0, 212, 255, 0.4);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        /* 主内容区域 */
+        .content-area {
+            position: relative;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 水球容器 - 新拟物风格 */
+        .water-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 20px auto;
+            border-radius: 50%;
+            background: linear-gradient(145deg, rgba(20, 35, 60, 0.9), rgba(10, 22, 40, 0.95));
+            box-shadow: 
+                20px 20px 60px rgba(0, 0, 0, 0.5),
+                -20px -20px 60px rgba(255, 255, 255, 0.02),
+                inset 0 0 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .water-container::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, rgba(0, 212, 255, 0.1), transparent);
+            pointer-events: none;
+        }
+
+        .water-ball {
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 
+                inset 0 0 30px rgba(0, 0, 0, 0.5),
+                0 0 20px rgba(0, 212, 255, 0.1);
+        }
+
+        .water-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(180deg, 
+                rgba(0, 180, 255, 0.7) 0%, 
+                rgba(0, 140, 220, 0.85) 40%,
+                rgba(0, 100, 180, 0.95) 100%);
+            transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .water-wave::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: -50%;
+            width: 200%;
+            height: 20px;
+            background: radial-gradient(ellipse at center, rgba(0, 200, 255, 0.6) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .water-surface {
+            position: absolute;
+            top: -5px;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(0, 220, 255, 0.8) 50%, 
+                transparent 100%);
+            opacity: 0.6;
+        }
+
+        .water-info {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+        }
+
+        .water-percentage {
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+        }
+
+        .water-amount {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .water-goal {
+            font-size: 12px;
+            color: var(--text-secondary);
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        /* 配件换算显示 */
+        .parts-conversion {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .parts-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .parts-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .part-tag {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(139, 92, 246, 0.2));
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .part-tag .count {
+            background: var(--accent-blue);
+            color: var(--bg-dark);
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-blue);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* 计算器样式输入 */
+        .calculator-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 25px;
+            padding: 20px;
+            margin-top: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        .input-amount {
+            font-size: 36px;
+            font-weight: 300;
+            color: var(--text-primary);
+            min-height: 44px;
+            word-break: break-all;
+        }
+
+        .input-label {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--glass-border);
+            padding: 10px 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 10px;
+            outline: none;
+        }
+
+        .input-label::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(5, 56px);
+            gap: 10px;
+        }
+
+        .calc-btn {
+            border-radius: 15px;
+            border: none;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-size: 22px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            padding: 0;
+        }
+
+        .calc-btn:active {
+            transform: scale(0.95);
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .calc-btn.number {
+            font-size: 26px;
+            font-weight: 400;
+        }
+
+        .calc-btn.action {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            font-weight: 600;
+        }
+
+        .calc-btn.clear {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+
+        .calc-btn.save-btn {
+            grid-column: span 4;
+            height: 56px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            color: var(--bg-dark);
+            font-weight: 600;
+            font-size: 18px;
+            border-radius: 15px;
+            margin-top: 0;
+        }
+
+        /* 记录列表 */
+        .records-section {
+            margin-top: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .filter-btn {
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .record-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .record-item {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .record-item:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .record-info {
+            flex: 1;
+        }
+
+        .record-label {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .record-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .record-amount {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+
+        .record-delete {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: rgba(255, 107, 107, 0.1);
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .record-item:hover .record-delete {
+            opacity: 1;
+        }
+
+        /* 配件管理页面 */
+        .parts-manager {
+            padding: 10px 0;
+        }
+
+        .add-part-form {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-primary);
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            color: var(--bg-dark);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .parts-table {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .part-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .part-row:last-child {
+            border-bottom: none;
+        }
+
+        .part-name {
+            font-size: 15px;
+        }
+
+        .part-price {
+            font-size: 14px;
+            color: var(--accent-cyan);
+        }
+
+        .part-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--accent-blue);
+        }
+
+        .btn-delete {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        /* 数据统计页面 */
+        .stats-detail {
+            padding: 10px 0;
+        }
+
+        .stats-chart {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chart-placeholder {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .stats-periods {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .period-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .period-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .period-value {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* 数据管理页面 */
+        .data-manager {
+            padding: 10px 0;
+        }
+
+        .data-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .data-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .data-card-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--accent-blue);
+            background: transparent;
+            color: var(--accent-blue);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* 日期筛选弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 25px;
+            padding: 25px;
+            width: 100%;
+            max-width: 350px;
+            animation: modalSlide 0.3s ease;
+        }
+
+        @keyframes modalSlide {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .date-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        /* 提示消息 */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px 25px;
+            color: var(--text-primary);
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* 响应式优化 */
+        @media (max-height: 700px) {
+            .water-container {
+                width: 220px;
+                height: 220px;
+            }
+            .water-ball {
+                width: 190px;
+                height: 190px;
+            }
+            .water-percentage {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1 class="header-title">莲花碎片记录器</h1>
+            <div class="header-icons">
+                <button class="icon-btn" onclick="showDataManager()" title="数据管理">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Tab 导航 -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="home">首页</button>
+            <button class="tab-btn" data-tab="records">记录</button>
+            <button class="tab-btn" data-tab="stats">统计</button>
+            <button class="tab-btn" data-tab="parts">配件</button>
+        </nav>
+
+        <!-- 内容区域 -->
+        <div class="content-area">
+            <!-- 首页 - 输入和可视化 -->
+            <div class="tab-content active" id="home-tab">
+                <!-- 水球 -->
+                <div class="water-container">
+                    <div class="water-ball">
+                        <div class="water-wave" id="waterWave">
+                            <div class="water-surface"></div>
+                        </div>
+                    </div>
+                    <div class="water-info">
+                        <div class="water-percentage" id="waterPercent">0%</div>
+                        <div class="water-amount" id="waterAmount">¥0</div>
+                        <div class="water-goal">目标: ¥500,000</div>
+                    </div>
+                </div>
+
+                <!-- 配件换算 -->
+                <div class="parts-conversion">
+                    <div class="parts-title">🚗 约等于以下配件</div>
+                    <div class="parts-list" id="partsList">
+                        <span class="part-tag">开始攒钱吧!</span>
+                    </div>
+                </div>
+
+                <!-- 快捷统计 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">本月已攒</div>
+                        <div class="stat-value" id="monthTotal">¥0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">今日已攒</div>
+                        <div class="stat-value" id="todayTotal">¥0</div>
+                    </div>
+                </div>
+
+                <!-- 计算器输入 -->
+                <div class="calculator-section">
+                    <div class="input-display">
+                        <div class="input-amount" id="inputAmount">0</div>
+                        <input type="text" class="input-label" id="inputLabel" placeholder="输入项目名称(可选): 如 忍住没买奶茶">
+                    </div>
+                    <div class="calc-grid">
+                        <button class="calc-btn clear" onclick="clearInput()">C</button>
+                        <button class="calc-btn" onclick="appendNumber('÷')">÷</button>
+                        <button class="calc-btn" onclick="appendNumber('×')">×</button>
+                        <button class="calc-btn" onclick="deleteLast()">⌫</button>
+                        
+                        <button class="calc-btn number" onclick="appendNumber('7')">7</button>
+                        <button class="calc-btn number" onclick="appendNumber('8')">8</button>
+                        <button class="calc-btn number" onclick="appendNumber('9')">9</button>
+                        <button class="calc-btn" onclick="appendNumber('-')">-</button>
+                        
+                        <button class="calc-btn number" onclick="appendNumber('4')">4</button>
+                        <button class="calc-btn number" onclick="appendNumber('5')">5</button>
+                        <button class="calc-btn number" onclick="appendNumber('6')">6</button>
+                        <button class="calc-btn" onclick="appendNumber('+')">+</button>
+                        
+                        <button class="calc-btn number" onclick="appendNumber('1')">1</button>
+                        <button class="calc-btn number" onclick="appendNumber('2')">2</button>
+                        <button class="calc-btn number" onclick="appendNumber('3')">3</button>
+                        <button class="calc-btn action" onclick="calculate()">=</button>
+                        
+                        <button class="calc-btn number" onclick="appendNumber('0')">0</button>
+                        <button class="calc-btn number" onclick="appendNumber('00')">00</button>
+                        <button class="calc-btn number" onclick="appendNumber('.')">.</button>
+                        <button class="calc-btn action" onclick="saveRecord()">💾</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 记录页面 -->
+            <div class="tab-content" id="records-tab">
+                <div class="records-section">
+                    <div class="section-header">
+                        <h2 class="section-title">攒钱记录</h2>
+                        <button class="filter-btn" onclick="showDateFilter()">
+                            <span>📅</span> 筛选
+                        </button>
+                    </div>
+                    <div class="record-list" id="recordList">
+                        <div class="empty-state">
+                            <div class="empty-icon">📝</div>
+                            <p>暂无记录，快去攒第一笔钱吧!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计页面 -->
+            <div class="tab-content" id="stats-tab">
+                <div class="stats-detail">
+                    <h2 class="section-title" style="margin-bottom: 20px;">攒钱统计</h2>
+                    <div class="stats-periods">
+                        <div class="period-card">
+                            <div class="period-label">累计攒钱</div>
+                            <div class="period-value" id="totalAll">¥0</div>
+                        </div>
+                        <div class="period-card">
+                            <div class="period-label">本年已攒</div>
+                            <div class="period-value" id="totalYear">¥0</div>
+                        </div>
+                        <div class="period-card">
+                            <div class="period-label">本季度</div>
+                            <div class="period-value" id="totalQuarter">¥0</div>
+                        </div>
+                        <div class="period-card">
+                            <div class="period-label">本月已攒</div>
+                            <div class="period-value" id="totalMonth">¥0</div>
+                        </div>
+                        <div class="period-card">
+                            <div class="period-label">本周已攒</div>
+                            <div class="period-value" id="totalWeek">¥0</div>
+                        </div>
+                        <div class="period-card">
+                            <div class="period-label">今日已攒</div>
+                            <div class="period-value" id="totalToday">¥0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 配件管理页面 -->
+            <div class="tab-content" id="parts-tab">
+                <div class="parts-manager">
+                    <h2 class="section-title" style="margin-bottom: 20px;">配件管理</h2>
+                    <div class="add-part-form">
+                        <div class="form-group">
+                            <label class="form-label">配件名称</label>
+                            <input type="text" class="form-input" id="partNameInput" placeholder="例如: 碳纤维尾翼">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">价格 (元)</label>
+                            <input type="number" class="form-input" id="partPriceInput" placeholder="例如: 20000">
+                        </div>
+                        <button class="btn-primary" onclick="addPart()">添加配件</button>
+                    </div>
+                    <div class="parts-table" id="partsTable">
+                        <!-- 配件列表 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据管理页面 -->
+            <div class="tab-content" id="data-tab">
+                <div class="data-manager">
+                    <h2 class="section-title" style="margin-bottom: 20px;">数据管理</h2>
+                    <div class="data-card">
+                        <div class="data-card-title">📤 导出数据</div>
+                        <div class="data-card-desc">将所有攒钱记录和配件设置导出为JSON文件，方便备份或迁移。</div>
+                        <button class="btn-primary" onclick="exportData()">导出数据</button>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-title">📥 导入数据</div>
+                        <div class="data-card-desc">从JSON文件导入数据，将覆盖当前所有记录和设置。</div>
+                        <button class="btn-secondary" onclick="document.getElementById('importFile').click()">选择文件导入</button>
+                        <input type="file" class="file-input" id="importFile" accept=".json" onchange="importData(this)">
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-title">🗑️ 清空数据</div>
+                        <div class="data-card-desc">清空所有攒钱记录和配件设置，此操作不可恢复!</div>
+                        <button class="btn-secondary" style="border-color: #ff6b6b; color: #ff6b6b;" onclick="clearAllData()">清空所有数据</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日期筛选弹窗 -->
+    <div class="modal-overlay" id="dateFilterModal">
+        <div class="modal-content">
+            <h3 class="modal-title">📅 日期筛选</h3>
+            <div class="date-inputs">
+                <div class="form-group">
+                    <label class="form-label">开始日期</label>
+                    <input type="date" class="form-input" id="startDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">结束日期</label>
+                    <input type="date" class="form-input" id="endDate">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeDateFilter()">取消</button>
+                <button class="btn-primary" onclick="applyDateFilter()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ==================== 数据存储 ====================
+        const GOAL_AMOUNT = 500000;
+        
+        // 默认配件配置
+        const DEFAULT_PARTS = [
+            { id: 1, name: '碳纤维尾翼', price: 20000, icon: '🏎️' },
+            { id: 2, name: '激光雷达', price: 40000, icon: '🔍' },
+            { id: 3, name: '碳陶刹车系统', price: 80000, icon: '🛑' },
+            { id: 4, name: '锻造轮毂(单个)', price: 15000, icon: '🔧' },
+            { id: 5, name: '运动排气系统', price: 35000, icon: '🔊' },
+            { id: 6, name: '碳纤维方向盘', price: 8000, icon: '🎮' },
+            { id: 7, name: '空气悬挂系统', price: 60000, icon: '⬆️' },
+            { id: 8, name: '碳纤维前唇', price: 12000, icon: '👄' },
+            { id: 9, name: '碳纤维侧裙', price: 15000, icon: '📏' },
+            { id: 10, name: '全景天窗', price: 30000, icon: '☀️' },
+            { id: 11, name: '高级音响系统', price: 25000, icon: '🎵' },
+            { id: 12, name: '真皮座椅套件', price: 45000, icon: '💺' }
+        ];
+
+        // 数据状态
+        let records = [];
+        let parts = [];
+        let currentInput = '0';
+        let dateFilter = null;
+
+        // ==================== 初始化 ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            initTabs();
+            updateUI();
+        });
+
+        function loadData() {
+            const savedRecords = localStorage.getItem('saveMoney_records');
+            const savedParts = localStorage.getItem('saveMoney_parts');
+            
+            records = savedRecords ? JSON.parse(savedRecords) : [];
+            parts = savedParts ? JSON.parse(savedParts) : [...DEFAULT_PARTS];
+        }
+
+        function saveData() {
+            localStorage.setItem('saveMoney_records', JSON.stringify(records));
+            localStorage.setItem('saveMoney_parts', JSON.stringify(parts));
+        }
+
+        // ==================== Tab 切换 ====================
+        function initTabs() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.dataset.tab;
+                    switchTab(tabId);
+                });
+            });
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabId);
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabId + '-tab').classList.add('active');
+            
+            if (tabId === 'records') renderRecords();
+            if (tabId === 'stats') updateStats();
+            if (tabId === 'parts') renderParts();
+        }
+
+        function showDataManager() {
+            switchTab('data');
+        }
+
+        // ==================== 计算器功能 ====================
+        function appendNumber(num) {
+            if (currentInput === '0' && num !== '.') {
+                currentInput = num;
+            } else {
+                currentInput += num;
+            }
+            updateInputDisplay();
+        }
+
+        function clearInput() {
+            currentInput = '0';
+            updateInputDisplay();
+        }
+
+        function deleteLast() {
+            currentInput = currentInput.slice(0, -1) || '0';
+            updateInputDisplay();
+        }
+
+        function calculate() {
+            try {
+                let expr = currentInput.replace(/×/g, '*').replace(/÷/g, '/');
+                const result = eval(expr);
+                currentInput = String(Math.round(result * 100) / 100);
+                updateInputDisplay();
+            } catch (e) {
+                showToast('计算错误');
+            }
+        }
+
+        function updateInputDisplay() {
+            document.getElementById('inputAmount').textContent = currentInput;
+        }
+
+        // ==================== 记录功能 ====================
+        function saveRecord() {
+            const amount = parseFloat(currentInput);
+            if (isNaN(amount) || amount <= 0) {
+                showToast('请输入有效金额');
+                return;
+            }
+
+            const label = document.getElementById('inputLabel').value.trim() || '攒钱记录';
+            
+            const record = {
+                id: Date.now(),
+                amount: amount,
+                label: label,
+                date: new Date().toISOString()
+            };
+
+            records.unshift(record);
+            saveData();
+            
+            currentInput = '0';
+            document.getElementById('inputLabel').value = '';
+            updateInputDisplay();
+            updateUI();
+            
+            showToast(`成功记录 ¥${amount.toLocaleString()}`);
+        }
+
+        function deleteRecord(id) {
+            if (!confirm('确定要删除这条记录吗?')) return;
+            records = records.filter(r => r.id !== id);
+            saveData();
+            renderRecords();
+            updateUI();
+            showToast('记录已删除');
+        }
+
+        // ==================== UI 更新 ====================
+        function updateUI() {
+            const total = records.reduce((sum, r) => sum + r.amount, 0);
+            const percentage = Math.min((total / GOAL_AMOUNT) * 100, 100);
+            
+            // 更新水球
+            document.getElementById('waterWave').style.height = percentage + '%';
+            document.getElementById('waterPercent').textContent = Math.round(percentage) + '%';
+            document.getElementById('waterAmount').textContent = '¥' + total.toLocaleString();
+            
+            // 更新配件换算
+            updatePartsConversion(total);
+            
+            // 更新快捷统计
+            updateQuickStats();
+        }
+
+        function updatePartsConversion(total) {
+            const container = document.getElementById('partsList');
+            
+            if (total === 0) {
+                container.innerHTML = '<span class="part-tag">开始攒钱吧!</span>';
+                return;
+            }
+
+            // 按价格降序排序配件
+            const sortedParts = [...parts].sort((a, b) => b.price - a.price);
+            let remaining = total;
+            const result = [];
+
+            for (const part of sortedParts) {
+                if (remaining >= part.price) {
+                    const count = Math.floor(remaining / part.price);
+                    remaining = remaining % part.price;
+                    result.push({ ...part, count });
+                }
+            }
+
+            if (result.length === 0) {
+                // 找最接近的配件
+                const closest = sortedParts.reverse().find(p => p.price <= total * 2);
+                if (closest) {
+                    const progress = Math.round((total / closest.price) * 100);
+                    container.innerHTML = `<span class="part-tag">${closest.icon} ${closest.name} 进度: ${progress}%</span>`;
+                } else {
+                    container.innerHTML = '<span class="part-tag">继续加油!</span>';
+                }
+                return;
+            }
+
+            container.innerHTML = result.map(p => 
+                `<span class="part-tag">${p.icon} ${p.name} <span class="count">×${p.count}</span></span>`
+            ).join('');
+        }
+
+        function updateQuickStats() {
+            const now = new Date();
+            const today = now.toDateString();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            
+            const todayTotal = records
+                .filter(r => new Date(r.date).toDateString() === today)
+                .reduce((sum, r) => sum + r.amount, 0);
+            
+            const monthTotal = records
+                .filter(r => new Date(r.date) >= monthStart)
+                .reduce((sum, r) => sum + r.amount, 0);
+            
+            document.getElementById('todayTotal').textContent = '¥' + todayTotal.toLocaleString();
+            document.getElementById('monthTotal').textContent = '¥' + monthTotal.toLocaleString();
+        }
+
+        // ==================== 记录列表 ====================
+        function renderRecords() {
+            const container = document.getElementById('recordList');
+            let displayRecords = [...records];
+            
+            if (dateFilter) {
+                const start = new Date(dateFilter.start);
+                const end = new Date(dateFilter.end);
+                end.setHours(23, 59, 59);
+                displayRecords = displayRecords.filter(r => {
+                    const date = new Date(r.date);
+                    return date >= start && date <= end;
+                });
+            }
+
+            if (displayRecords.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📝</div>
+                        <p>${dateFilter ? '该时间段暂无记录' : '暂无记录，快去攒第一笔钱吧!'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = displayRecords.map(record => {
+                const date = new Date(record.date);
+                const dateStr = `${date.getMonth() + 1}月${date.getDate()}日`;
+                const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                
+                return `
+                    <div class="record-item">
+                        <div class="record-info">
+                            <div class="record-label">${record.label}</div>
+                            <div class="record-date">${dateStr} ${timeStr}</div>
+                        </div>
+                        <div class="record-amount">+¥${record.amount.toLocaleString()}</div>
+                        <button class="record-delete" onclick="deleteRecord(${record.id})">🗑️</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ==================== 日期筛选 ====================
+        function showDateFilter() {
+            document.getElementById('dateFilterModal').classList.add('active');
+        }
+
+        function closeDateFilter() {
+            document.getElementById('dateFilterModal').classList.remove('active');
+        }
+
+        function applyDateFilter() {
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+            
+            if (!start || !end) {
+                showToast('请选择开始和结束日期');
+                return;
+            }
+            
+            dateFilter = { start, end };
+            closeDateFilter();
+            renderRecords();
+        }
+
+        // ==================== 统计功能 ====================
+        function updateStats() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay());
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+            const yearStart = new Date(now.getFullYear(), 0, 1);
+
+            const stats = {
+                all: records.reduce((sum, r) => sum + r.amount, 0),
+                year: records.filter(r => new Date(r.date) >= yearStart).reduce((sum, r) => sum + r.amount, 0),
+                quarter: records.filter(r => new Date(r.date) >= quarterStart).reduce((sum, r) => sum + r.amount, 0),
+                month: records.filter(r => new Date(r.date) >= monthStart).reduce((sum, r) => sum + r.amount, 0),
+                week: records.filter(r => new Date(r.date) >= weekStart).reduce((sum, r) => sum + r.amount, 0),
+                today: records.filter(r => new Date(r.date) >= today).reduce((sum, r) => sum + r.amount, 0)
+            };
+
+            document.getElementById('totalAll').textContent = '¥' + stats.all.toLocaleString();
+            document.getElementById('totalYear').textContent = '¥' + stats.year.toLocaleString();
+            document.getElementById('totalQuarter').textContent = '¥' + stats.quarter.toLocaleString();
+            document.getElementById('totalMonth').textContent = '¥' + stats.month.toLocaleString();
+            document.getElementById('totalWeek').textContent = '¥' + stats.week.toLocaleString();
+            document.getElementById('totalToday').textContent = '¥' + stats.today.toLocaleString();
+        }
+
+        // ==================== 配件管理 ====================
+        function renderParts() {
+            const container = document.getElementById('partsTable');
+            container.innerHTML = parts.map(part => `
+                <div class="part-row">
+                    <div>
+                        <div class="part-name">${part.icon} ${part.name}</div>
+                        <div class="part-price">¥${part.price.toLocaleString()}</div>
+                    </div>
+                    <div class="part-actions">
+                        <button class="btn-small btn-delete" onclick="deletePart(${part.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addPart() {
+            const name = document.getElementById('partNameInput').value.trim();
+            const price = parseFloat(document.getElementById('partPriceInput').value);
+            
+            if (!name || isNaN(price) || price <= 0) {
+                showToast('请输入有效的配件名称和价格');
+                return;
+            }
+
+            const part = {
+                id: Date.now(),
+                name: name,
+                price: price,
+                icon: '🔧'
+            };
+
+            parts.push(part);
+            saveData();
+            renderParts();
+            
+            document.getElementById('partNameInput').value = '';
+            document.getElementById('partPriceInput').value = '';
+            showToast('配件添加成功');
+        }
+
+        function deletePart(id) {
+            if (!confirm('确定要删除这个配件吗?')) return;
+            parts = parts.filter(p => p.id !== id);
+            saveData();
+            renderParts();
+            updateUI();
+            showToast('配件已删除');
+        }
+
+        // ==================== 数据导入导出 ====================
+        function exportData() {
+            const data = {
+                records: records,
+                parts: parts,
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `攒钱记录_${new Date().toLocaleDateString()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('数据已导出');
+        }
+
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.records && Array.isArray(data.records)) {
+                        records = data.records;
+                    }
+                    if (data.parts && Array.isArray(data.parts)) {
+                        parts = data.parts;
+                    }
+                    saveData();
+                    updateUI();
+                    showToast('数据导入成功');
+                } catch (err) {
+                    showToast('文件格式错误');
+                }
+            };
+            reader.readAsText(file);
+            input.value = '';
+        }
+
+        function clearAllData() {
+            if (!confirm('⚠️ 确定要清空所有数据吗?此操作不可恢复!')) return;
+            if (!confirm('再次确认: 所有攒钱记录和配件设置将被永久删除!')) return;
+            
+            records = [];
+            parts = [...DEFAULT_PARTS];
+            saveData();
+            updateUI();
+            showToast('所有数据已清空');
+        }
+
+        // ==================== 工具函数 ====================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(console.error);
+        }
+    </script>
+</body>
+</html>
